@@ -167,6 +167,16 @@ namespace BezierSolution
 
 		public Vector3 GetPoint( float normalizedT )
 		{
+            if (endPoints.Count == 0)
+            {
+                Refresh();
+            }
+
+            if (endPoints.Count < 2)
+            {
+                return Vector3.zero;
+            }
+
 			if( !loop )
 			{
 				if( normalizedT <= 0f )
@@ -244,6 +254,49 @@ namespace BezierSolution
 				   6f * oneMinusLocalT * localT * ( endPoint.precedingControlPointPosition - startPoint.followingControlPointPosition ) +
 				   3f * localT * localT * ( endPoint.position - endPoint.precedingControlPointPosition );
 		}
+
+        public bool GetSegment(float normalizedT, out BezierPoint start, out BezierPoint end)
+        {
+			if( !loop )
+            {
+                if (normalizedT <= 0f)
+                {
+                    start = endPoints[0];
+                    end = endPoints[0];
+      			    return true;
+                }
+				if( normalizedT >= 1f )
+				{
+					int index = endPoints.Count - 1;
+                    start = endPoints[index];
+                    end = endPoints[index];
+      			    return true;
+				}
+			}
+			else
+			{
+                if (normalizedT < 0f)
+                {
+                    normalizedT += 1f;
+                }
+				else if (normalizedT >= 1f)
+                {
+                    normalizedT -= 1f;
+                }
+			}
+
+			float t = normalizedT * ( loop ? endPoints.Count : ( endPoints.Count - 1 ) );
+
+			int startIndex = (int) t;
+			int endIndex = startIndex + 1;
+
+			if( endIndex == endPoints.Count )
+				endIndex = 0;
+
+			start = endPoints[startIndex];
+			end = endPoints[endIndex];
+            return true;
+        }
 
 		public float GetLengthApproximately( float startNormalizedT, float endNormalizedT, float accuracy = 50f )
 		{

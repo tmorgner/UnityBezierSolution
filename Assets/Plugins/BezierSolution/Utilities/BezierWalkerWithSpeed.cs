@@ -7,20 +7,34 @@ namespace BezierSolution
 	{
 		public enum TravelMode { Once, Loop, PingPong };
 
-		private Transform cachedTransform;
-
-		public BezierSpline spline;
+		Transform cachedTransform;
+		[SerializeField] BezierSpline spline;
 		public TravelMode travelMode;
 
 		public float speed = 5f;
 		private float progress = 0f;
 
-		public BezierSpline Spline { get { return spline; } }
+        public BezierSpline Spline
+        {
+            get { return spline; }
+            set
+            {
+                this.spline = value;
+                this.progress = 0;
+                this.onPathCompletedCalledAt0 = false;
+                this.onPathCompletedCalledAt1 = false;
+            }
+        }
 
 		public float NormalizedT
 		{
 			get { return progress; }
-			set { progress = value; }
+            set
+            {
+                progress = value; 
+                this.onPathCompletedCalledAt0 = false;
+                this.onPathCompletedCalledAt1 = false;
+            }
 		}
 
 		//public float movementLerpModifier = 10f;
@@ -42,12 +56,16 @@ namespace BezierSolution
 
 		private void Update()
 		{
+            if (!spline)
+            {
+                return;
+            }
+
 			float targetSpeed = ( isGoingForward ) ? speed : -speed;
 
 			Vector3 targetPos = spline.MoveAlongSpline( ref progress, targetSpeed * Time.deltaTime );
 
 			cachedTransform.position = targetPos;
-			//cachedTransform.position = Vector3.Lerp( cachedTransform.position, targetPos, movementLerpModifier * Time.deltaTime );
 
 			bool movingForward = MovingForward;
 
