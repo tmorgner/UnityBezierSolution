@@ -5,14 +5,18 @@ namespace BezierSolution
 {
 	public class BezierWalkerWithSpeed : MonoBehaviour, IBezierWalker
 	{
-		public enum TravelMode { Once, Loop, PingPong };
+		public delegate Quaternion RotationFilter(Quaternion suggestedRotation, float progress);
+		
+		public enum TravelMode { Once, Loop, PingPong }
 
+		public RotationFilter RotationFilterOverride { get; set; }
+		
 		Transform cachedTransform;
 		[SerializeField] BezierSpline spline;
 		public TravelMode travelMode;
 
 		public float speed = 5f;
-		private float progress = 0f;
+		float progress;
 
         public BezierSpline Spline
         {
@@ -42,19 +46,19 @@ namespace BezierSolution
 
 		public bool lookForward = true;
 
-		private bool isGoingForward = true;
+		bool isGoingForward = true;
 		public bool MovingForward { get { return ( speed > 0f ) == isGoingForward; } }
 
 		public UnityEvent onPathCompleted = new UnityEvent();
-		private bool onPathCompletedCalledAt1 = false;
-		private bool onPathCompletedCalledAt0 = false;
+		bool onPathCompletedCalledAt1;
+		bool onPathCompletedCalledAt0;
 
-		private void Awake()
+		void Awake()
 		{
 			cachedTransform = transform;
 		}
 
-		private void Update()
+		void Update()
 		{
             if (!spline)
             {
@@ -77,7 +81,8 @@ namespace BezierSolution
 				else
 					targetRotation = Quaternion.LookRotation( -spline.GetTangent( progress ) );
 
-				cachedTransform.rotation = Quaternion.Lerp( cachedTransform.rotation, targetRotation, rotationLerpModifier * Time.deltaTime );
+				targetRotation = FilterRotation(targetRotation, progress);
+				cachedTransform.rotation = targetRotation;
 			}
 
 			if( movingForward )
@@ -130,6 +135,12 @@ namespace BezierSolution
 					onPathCompletedCalledAt0 = false;
 				}
 			}
+		}
+
+		Quaternion FilterRotation(Quaternion targetRotation, float f)
+		{
+			var lerp = Quaternion.Lerp(cachedTransform.rotation, targetRotation, rotationLerpModifier * Time.deltaTime);			
+			return RotationFilterOverride?.Invoke(lerp, f) ?? lerp;
 		}
 	}
 }
